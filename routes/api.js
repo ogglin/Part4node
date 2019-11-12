@@ -6,7 +6,7 @@ var crypto = require('crypto');
 var jsonParser = bodyParser.json();
 var multer = require('multer');
 var multipart = multer();
-const { Pool } = require('pg');
+const {Pool} = require('pg');
 const pool = new Pool({
     host: '116.203.219.63',
     //host: 'localhost',
@@ -20,26 +20,27 @@ const pool = new Pool({
 const salt = '!23209daw312_d21';
 /* Connect to BD */
 
-router.get('/', function(req, res, next) {
+router.get('/', function (req, res, next) {
     res.render('api', {result: 'RestAPI'});
 });
 
 /* Auth */
 var token;
 router.post('/auth', multipart.array(), function (req, res) {
-   email = req.body.email;
-   pass = req.body.password;
-   ip = req.connection.remoteAddress;
-   hash = crypto.createHmac('sha256', salt).update(crypto.createHmac('sha256', salt).update(pass).digest('hex')).digest('hex');
-   token = crypto.randomBytes(16).toString('hex');
-   body = {
-       token: token,
-       ipaddr: ip,
-       password: hash};
-   q = 'SELECT "user".auth_key, "user".username FROM "user" WHERE "user".email = \'' + email + '\' AND ' +
-       '"user".password_hash = \'' + hash + '\'';
-   /*return res.send(q);*/
-   (async () => {
+    email = req.body.email;
+    pass = req.body.password;
+    ip = req.connection.remoteAddress;
+    hash = crypto.createHmac('sha256', salt).update(crypto.createHmac('sha256', salt).update(pass).digest('hex')).digest('hex');
+    token = crypto.randomBytes(16).toString('hex');
+    body = {
+        token: token,
+        ipaddr: ip,
+        password: hash
+    };
+    q = 'SELECT "user".auth_key, "user".username FROM "user" WHERE "user".email = \'' + email + '\' AND ' +
+        '"user".password_hash = \'' + hash + '\'';
+    /*return res.send(q);*/
+    (async () => {
         const client = await pool.connect();
         try {
             const result = await client.query(q);
@@ -51,7 +52,7 @@ router.post('/auth', multipart.array(), function (req, res) {
         } finally {
             client.release()
         }
-   })().catch(e => console.log(e.stack));
+    })().catch(e => console.log(e.stack));
 });
 
 /* Get all brands */
@@ -73,9 +74,9 @@ router.get('/brands', function (req, res) {
 var models;
 router.get('/models', function (req, res) {
     console.log(req.query, req.query['brand_id']);
-    qq = "SELECT all_models.id, all_models.name, all_models.scheme_picture, all_models.picture " +
-        "FROM all_models " +
-        "WHERE all_models.brand_id = " + req.query["brand_id"];
+    qq = "SELECT models.id, models.name, models.scheme_picture, models.picture " +
+        "FROM models " +
+        "WHERE models.brand_id = " + req.query["brand_id"];
     (async () => {
         const client = await pool.connect();
         try {
@@ -127,8 +128,8 @@ router.get('/detail', function (req, res) {
 var modules;
 router.get('/modules', function (req, res) {
     qq = 'SELECT modules."id", modules."name" AS "module", modules.description, modules.scheme_picture ' +
-        'FROM modules LEFT JOIN link_model_modules ON link_model_modules.module_id = modules."id" LEFT JOIN all_models ON link_model_modules.model_id = all_models."id" ' +
-        'WHERE all_models."id" = ' + req.query["id"];
+        'FROM modules LEFT JOIN link_model_modules ON link_model_modules.module_id = modules."id" LEFT JOIN models ON link_model_modules.model_id = models."id" ' +
+        'WHERE models."id" = ' + req.query["id"];
 
     (async () => {
         const client = await pool.connect();
@@ -148,25 +149,25 @@ router.get('/partcodes', function (req, res) {
     if (req.query['module']) {
         qq = 'SELECT details."id" AS detail_id, details."name" AS detail_name, details.name_ru AS detail_name_ru, ' +
             'partcodes.code AS partcode, partcodes.description AS partcodes_description, ' +
-            'all_models."name" AS model, all_models.scheme_picture AS model_shceme, all_models.picture AS model_image, ' +
+            'models."name" AS model, models.scheme_picture AS model_shceme, models.picture AS model_image, ' +
             'modules."name" AS module, modules.scheme_picture AS module_image ' +
             'FROM details ' +
             'LEFT JOIN partcodes ON details.partcode_id = partcodes."id" ' +
-            'LEFT JOIN all_models ON details.all_model_id = all_models."id" ' +
-            'LEFT JOIN link_model_modules ON link_model_modules.model_id = all_models."id" ' +
+            'LEFT JOIN models ON details.all_model_id = models."id" ' +
+            'LEFT JOIN link_model_modules ON link_model_modules.model_id = models."id" ' +
             'INNER JOIN modules ON details.module_id = modules."id" AND link_model_modules.module_id = modules."id" ' +
-            'WHERE all_models."id" = ' + req.query["model"] + ' AND modules."id" = ' + req.query['module'];
+            'WHERE models."id" = ' + req.query["model"] + ' AND modules."id" = ' + req.query['module'];
     } else {
         qq = 'SELECT details."id" AS detail_id, details."name" AS detail_name, details.name_ru AS detail_name_ru, ' +
             'partcodes.code AS partcode, partcodes.description AS partcodes_description, ' +
-            'all_models."name" AS model, all_models.scheme_picture AS model_shceme, all_models.picture AS model_image, ' +
+            'models."name" AS model, models.scheme_picture AS model_shceme, models.picture AS model_image, ' +
             'modules."name" AS module, modules.scheme_picture AS module_image ' +
             'FROM details ' +
             'LEFT JOIN partcodes ON details.partcode_id = partcodes."id" ' +
-            'LEFT JOIN all_models ON details.all_model_id = all_models."id" ' +
-            'LEFT JOIN link_model_modules ON link_model_modules.model_id = all_models."id" ' +
+            'LEFT JOIN models ON details.all_model_id = models."id" ' +
+            'LEFT JOIN link_model_modules ON link_model_modules.model_id = models."id" ' +
             'INNER JOIN modules ON details.module_id = modules."id" AND link_model_modules.module_id = modules."id" ' +
-            'WHERE all_models."id" = ' + req.query["model"];
+            'WHERE models."id" = ' + req.query["model"];
     }
     (async () => {
         const client = await pool.connect();
@@ -185,12 +186,13 @@ var q;
 var answer;
 var qq;
 router.post('/search', multipart.array(), function (req, res) {
-    if(!req.body) return res.sendStatus(400);
-    svals = req.body.sval;
-    avals = svals.split(' ');
-    qq = '';
-    for(let i =0; i < avals.length; i++) {
-        if (i === 0){
+    if (!req.body) return res.sendStatus(400);
+    /*svals = req.body.sval;
+    avals = svals.split(' ');*/
+    console.log(req.body.sval);
+    qs = "select * from details_search('"+req.body.sval+"') as (sml real, ts_rank real, detail_id bigint, detail_name text, detail_name_ru text) limit 20;";
+    /*for (let i = 0; i < avals.length; i++) {
+        if (i === 0) {
             qq += 'details."name" ILIKE(\'%' + avals[i] + '%\')';
         } else {
             qq += ' AND details."name" ILIKE(\'%' + avals[i] + '%\')';
@@ -200,12 +202,12 @@ router.post('/search', multipart.array(), function (req, res) {
         'FROM search_index s left join details d on s.id=d.id ' +
         'left join partcodes p on d.partcode_id = p.id ' +
         'left join modules m on d.module_id = m.id ' +
-        'WHERE document @@ websearch_to_tsquery(\'english\', \''+ svals +'\') ' +
-        'ORDER BY ts_rank(document, websearch_to_tsquery(\'english\', \''+ svals +'\')) DESC LIMIT 20;';
-    /*q = 'SELECT details.*, partcodes.code, partcodes.description, all_models."name" as model_name, all_models.scheme_picture, all_models.picture, media.link, media.title ' +
+        'WHERE document @@ websearch_to_tsquery(\'english\', \'' + svals + '\') ' +
+        'ORDER BY ts_rank(document, websearch_to_tsquery(\'english\', \'' + svals + '\')) DESC LIMIT 20;';*/
+    /*q = 'SELECT details.*, partcodes.code, partcodes.description, models."name" as model_name, models.scheme_picture, models.picture, media.link, media.title ' +
         'FROM details ' +
         'LEFT JOIN partcodes ON details.partcode_id = partcodes. ID ' +
-        'LEFT JOIN all_models ON details.all_model_id = all_models. ID ' +
+        'LEFT JOIN models ON details.all_model_id = models. ID ' +
         'LEFT JOIN media ON details. ID = media.detail_id WHERE ' + qq;*/
     /*q = 'SELECT details.name, details.id, partcodes.code, partcodes.description, ' +
         'ts_rank(to_tsvector(\'russian_en\', COALESCE(partcodes.code,\'\')||\' \'|| COALESCE(details. NAME,\'\')), websearch_to_tsquery(\'russian_en\',\'scanners cover\')) rank ' +
@@ -214,19 +216,19 @@ router.post('/search', multipart.array(), function (req, res) {
         'WHERE to_tsvector(\'russian_en\',  COALESCE(partcodes.code,\'\')||\' \'||  COALESCE(details. NAME,\'\'))  ' +
         '@@ websearch_to_tsquery(\'russian_en\',\'scanners cover\') ' +
         'ORDER BY rank LIMIT 5 OFFSET 0;';
-    /*q = 'SELECT details.*, partcodes.code, partcodes.description, all_models.name as model_name, all_models.picture, all_models.scheme_picture, media.link, media.title, ts_rank(to_tsvector(\'russian_en\', ' +
-        'COALESCE(all_models. NAME,\'\')||\' \'|| COALESCE(partcodes.code,\'\')||\' \'|| COALESCE(details. NAME,\'\')||\' \'|| ' +
+    /*q = 'SELECT details.*, partcodes.code, partcodes.description, models.name as model_name, models.picture, models.scheme_picture, media.link, media.title, ts_rank(to_tsvector(\'russian_en\', ' +
+        'COALESCE(models. NAME,\'\')||\' \'|| COALESCE(partcodes.code,\'\')||\' \'|| COALESCE(details. NAME,\'\')||\' \'|| ' +
         'COALESCE(details. NAME_RU,\'\')), websearch_to_tsquery(\'russian_en\',\'' + svals + '\')) rank FROM details ' +
         'LEFT JOIN partcodes ON details.partcode_id = partcodes. ID ' +
-        'LEFT JOIN all_models ON details.all_model_id = all_models. ID ' +
+        'LEFT JOIN models ON details.all_model_id = models. ID ' +
         'LEFT JOIN media ON details. ID = media.detail_id WHERE to_tsvector(\'russian_en\', ' +
-        'COALESCE(all_models. NAME,\'\')||\' \'|| COALESCE(partcodes.code,\'\')||\' \'||  ' +
+        'COALESCE(models. NAME,\'\')||\' \'|| COALESCE(partcodes.code,\'\')||\' \'||  ' +
         'COALESCE(details. NAME,\'\')||\' \'|| COALESCE(details. NAME_RU,\'\')) ' +
         '@@ websearch_to_tsquery(\'russian_en\',\'' + svals + '\') ORDER BY rank LIMIT 5000 OFFSET 0;';*/
     (async () => {
         const client = await pool.connect();
         try {
-            const result = await client.query(q);
+            const result = await client.query(qs);
             answer = result.rows;
             return res.send(answer);
         } finally {
@@ -240,11 +242,14 @@ var filtered_models;
 router.post('/filter', multipart.array(), function (req, res) {
     fvals = req.body.vals;
     count = (fvals.split(',')).length;
-    qq = 'SELECT details."id", details."name" FROM details ' +
-        'INNER JOIN link_details_options ON link_details_options.detail_id = details."id" ' +
-        'INNER JOIN detail_options ON link_details_options.detail_option_id = detail_options."id" ' +
-        'WHERE detail_options."id" IN (' + fvals + ')' +
-        'GROUP BY details."id" HAVING COUNT(*) = ' + count;
+    qq = 'SELECT d."id", sd."name" FROM spr_details sd LEFT JOIN details d on sd."id" = d.detail_id ' +
+        'LEFT JOIN models m ON m.id = d.model_id LEFT JOIN link_details_options ldo ON ldo.detail_id = d."id" ' +
+        'LEFT JOIN detail_options dop ON ldo.detail_option_id = dop."id" LEFT JOIN brands b on b.id = m.brand_id ' +
+        'WHERE dop."id" IN (' + fvals + ') ';
+    if (req.body.brand) {
+        qq += ' AND b.id = ' + req.body.brand;
+    }
+    qq += 'GROUP BY sd."name", d."id" HAVING COUNT(*) = ' + count;
     console.log(qq);
     (async () => {
         const client = await pool.connect();
@@ -256,14 +261,15 @@ router.post('/filter', multipart.array(), function (req, res) {
             client.release()
         }
     })().catch(e => console.log(e.stack));
-});
+})
+;
 
 /* Filter options */
 var filter;
 router.get('/filter', function (req, res) {
-   main = req.query['main'];
-   q = 'SELECT * FROM filter_settings WHERE filter_settings.main_filter =' + main;
-   console.log(q);
+    main = req.query['main'];
+    q = 'SELECT * FROM filter_settings WHERE filter_settings.main_filter =' + main;
+    console.log(q);
     (async () => {
         const client = await pool.connect();
         try {
